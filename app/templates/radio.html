@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Radio - TunisiaHub{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-3xl font-bold">📻 Web Radio</h2>
+    <form class="flex gap-2">
+        <input type="text" name="q" placeholder="Search stations..." value="{{ request.query_params.get('q', '') }}" class="bg-gray-800 px-4 py-2 rounded border border-gray-700">
+        <button class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Search</button>
+    </form>
+</div>
+
+<div class="grid grid-cols-3 gap-4">
+    {% for station in stations %}
+    <div class="bg-gray-800 p-4 rounded-lg cursor-pointer hover:bg-gray-700 transition" 
+         onclick="playGlobalRadio('{{ station.url_resolved }}', '{{ station.name }}', '{{ station.favicon }}')">
+        <div class="flex items-center gap-3">
+            <img src="{{ station.favicon or 'https://via.placeholder.com/40' }}" class="w-10 h-10 rounded bg-gray-700">
+            <div class="overflow-hidden">
+                <h3 class="font-semibold truncate">{{ station.name }}</h3>
+                <p class="text-sm text-gray-400">{{ station.country }}</p>
+            </div>
+        </div>
+        <p class="text-xs text-gray-500 mt-2 truncate">{{ station.tags }}</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

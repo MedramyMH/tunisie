@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}News - TunisiaHub{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+    <h2 class="text-3xl font-bold">📰 News</h2>
+    <div class="flex gap-2">
+        <a href="/news?category=Politics" class="px-3 py-1 bg-gray-800 rounded hover:bg-gray-700">Politics</a>
+        <a href="/news?category=Tech" class="px-3 py-1 bg-gray-800 rounded hover:bg-gray-700">Tech</a>
+        <a href="/news?category=Sports" class="px-3 py-1 bg-gray-800 rounded hover:bg-gray-700">Sports</a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {% for article in articles %}
+    <article class="bg-gray-800 rounded-xl overflow-hidden hover:scale-[1.02] transition-transform">
+        {% if article.image_url %}
+            <img src="{{ article.image_url }}" class="w-full h-48 object-cover">
+        {% endif %}
+        <div class="p-4">
+            <span class="text-xs text-blue-400 bg-blue-400/10 px-2 py-1 rounded">{{ article.category }}</span>
+            <h3 class="text-xl font-bold mt-2">{{ article.title }}</h3>
+            <p class="text-gray-400 mt-2 line-clamp-3">{{ article.content | safe }}</p>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% endblock %}
