@@ -6,108 +6,60 @@
     <title>{% block title %}TunisiaHub{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; }
+    </style>
 </head>
-<body class="bg-gray-900 text-white flex h-screen overflow-hidden">
+<body class="min-h-screen flex flex-col">
 
-    <!-- Sidebar -->
-    <aside class="w-64 bg-gray-800 flex flex-col justify-between p-4 z-40">
-        <div>
-            <h1 class="text-2xl font-bold mb-10 text-blue-400">🇹🇳 TunisiaHub</h1>
-            <nav class="space-y-2">
-                <a href="/" data-nav class="nav-link block p-2 rounded transition hover:bg-gray-700">🏠 Home</a>
-                <a href="/radio" data-nav class="nav-link block p-2 rounded transition hover:bg-gray-700">📻 Radio</a>
-                <a href="/news" data-nav class="nav-link block p-2 rounded transition hover:bg-gray-700">📰 News</a>
-                <a href="/downloader" data-nav class="nav-link block p-2 rounded transition hover:bg-gray-700">⬇️ Downloader</a>
-                <a href="/transcription" data-nav class="nav-link block p-2 rounded transition hover:bg-gray-700">🎙️ Transcription</a>
+    <!-- Top Navigation -->
+    <nav class="bg-slate-900 border-b border-slate-700 shadow-lg z-50">
+        <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
+            <a href="/" class="text-2xl font-bold text-blue-400">🇹🇳 TunisiaHub</a>
+            
+            <div class="hidden md:flex space-x-6">
+                <a href="/radio" class="hover:text-blue-400 transition">📻 Radio</a>
+                <a href="/news" class="hover:text-blue-400 transition">📰 News</a>
+                <a href="/downloader" class="hover:text-blue-400 transition">🎞️ Editor</a>
+                <a href="/transcription" class="hover:text-blue-400 transition">🎙️ Transcribe</a>
                 {% if request.state.user and request.state.user.is_admin %}
-                    <a href="/admin" data-nav class="nav-link block p-2 rounded transition text-yellow-400 hover:bg-gray-700">⚙️ Admin</a>
+                    <a href="/admin" class="text-yellow-400 hover:text-yellow-300 transition">⚙️ Admin</a>
                 {% endif %}
-            </nav>
-        </div>
-        <div class="text-sm text-gray-400">
-            {% if request.state.user %}
-                <p>👤 {{ request.state.user.username }}</p>
-                <a href="/auth/logout" class="text-red-400 hover:underline">Logout</a>
-            {% else %}
-                <!-- Normal link, forces reload for auth -->
-                <a href="/auth/login" class="text-blue-400 hover:underline">Login</a>
-            {% endif %}
-        </div>
-    </aside>
+            </div>
 
-    <!-- Main Content Wrapper -->
-    <div class="flex-1 flex flex-col overflow-hidden">
-        <!-- Header Ad -->
-        <div class="bg-gray-800 p-2 text-center border-b border-gray-700 flex-shrink-0">
-            <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-XXXX" data-ad-slot="XXXX" data-ad-format="auto"></ins>
-        </div>
-
-        <!-- Scrollable Content -->
-        <div class="flex-1 overflow-y-auto p-8 pb-28">
-            <div id="app-content">
-                {% block content %}{% endblock %}
+            <div class="flex items-center gap-4">
+                {% if request.state.user %}
+                    <span class="text-sm text-slate-400">{{ request.state.user.username }}</span>
+                    <a href="/auth/logout" class="text-red-400 hover:underline text-sm">Logout</a>
+                {% else %}
+                    <a href="/login" class="bg-blue-600 px-4 py-1.5 rounded text-sm hover:bg-blue-700">Login</a>
+                {% endif %}
             </div>
         </div>
+    </nav>
 
-        <!-- PERSISTENT GLOBAL RADIO PLAYER -->
-        <div id="global-player" class="fixed bottom-0 left-64 right-0 bg-gray-950 border-t border-gray-800 p-3 z-50 transform translate-y-full transition-transform duration-300">
-            <div class="flex items-center gap-4 max-w-7xl mx-auto">
-                <img id="player-img" src="" class="w-12 h-12 rounded bg-gray-800 hidden">
-                <div class="flex-1 min-w-0">
-                    <p id="player-title" class="font-bold text-sm truncate">No station playing</p>
-                    <p class="text-xs text-gray-500">TunisiaHub Radio</p>
-                </div>
-                <audio id="global-audio" controls class="w-96 h-10" style="filter: invert(1) hue-rotate(180deg);"></audio>
+    <!-- Header Ad Banner -->
+    <div class="w-full bg-slate-800 border-b border-slate-700 text-center py-2">
+        <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-XXXX" data-ad-slot="XXXX" data-ad-format="auto"></ins>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 max-w-7xl w-full mx-auto p-6 pb-32">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- PERSISTENT GLOBAL RADIO PLAYER (Bottom Bar) -->
+    <div id="global-player" class="fixed bottom-0 left-0 right-0 bg-slate-950 border-t border-slate-800 p-3 z-50 transform translate-y-full transition-transform duration-300">
+        <div class="max-w-7xl mx-auto flex items-center gap-4">
+            <img id="player-img" src="" class="w-12 h-12 rounded bg-slate-800 hidden object-cover">
+            <div class="flex-1 min-w-0">
+                <p id="player-title" class="font-bold text-sm truncate text-white">No station playing</p>
             </div>
+            <audio id="global-audio" controls autoplay class="w-80 h-10" style="filter: invert(1) hue-rotate(180deg);"></audio>
         </div>
     </div>
 
     <script>
-        // AJAX Navigation to keep audio alive
-        document.addEventListener('click', function(e) {
-            const link = e.target.closest('a[data-nav]');
-            if (link) {
-                e.preventDefault();
-                const url = link.href;
-                
-                // Update active states
-                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('bg-blue-600/20', 'text-blue-400'));
-                link.classList.add('bg-blue-600/20', 'text-blue-400');
-                
-                fetch(url)
-                    .then(r => r.text())
-                    .then(html => {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-                        const newContent = doc.getElementById('app-content');
-                        if (newContent) {
-                            document.getElementById('app-content').innerHTML = newContent.innerHTML;
-                            // Execute scripts from loaded page
-                            newContent.querySelectorAll('script').forEach(script => {
-                                const newScript = document.createElement('script');
-                                newScript.textContent = script.textContent;
-                                document.getElementById('app-content').appendChild(newScript);
-                            });
-                        }
-                        history.pushState({}, '', url);
-                        document.getElementById('app-content').parentElement.scrollTop = 0;
-                    });
-            }
-        });
-
-        // Handle browser back/forward
-        window.addEventListener('popstate', () => {
-            fetch(window.location.href)
-                .then(r => r.text())
-                .then(html => {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    const newContent = doc.getElementById('app-content');
-                    if (newContent) document.getElementById('app-content').innerHTML = newContent.innerHTML;
-                });
-        });
-
-        // Global Radio Player Function
         function playGlobalRadio(url, name, favicon) {
             const audio = document.getElementById('global-audio');
             const player = document.getElementById('global-player');
@@ -119,10 +71,11 @@
             
             document.getElementById('player-title').innerText = name;
             const img = document.getElementById('player-img');
-            img.src = favicon || '';
-            img.classList.remove('hidden');
-            
-            // Slide up player
+            if(favicon) {
+                img.src = favicon;
+                img.onerror = () => { img.src = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiM2MzY2ZjEiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNNCA5djYiLz48cGF0aCBkPSJNOCA2djEyIi8+PHBhdGggZD0iTTEyIDR2MTYiLz48cGF0aCBkPSJNMTYgNnYxMiIvPjxwYXRoIGQ9Ik0yMCA5djYiLz48L3N2Zz4='; };
+                img.classList.remove('hidden');
+            }
             player.classList.remove('translate-y-full');
         }
     </script>
