@@ -14,4 +14,4 @@ faster-whisper
 python-dotenv
 reportlab
 aiofiles
-
+psycopg2
