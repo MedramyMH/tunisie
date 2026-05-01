@@ -1,93 +1,66 @@
-import os, uuid
+import os, uuid, json
 from pathlib import Path
-from moviepy.editor import VideoFileClip, AudioFileClip, CompositeVideoClip, ImageClip
-from moviepy.editor import concatenate_videoclips
-from fastapi import HTTPException   
-
-
+import subprocess
 import yt_dlp
+from moviepy.editor import VideoFileClip, AudioFileClip
 
 TEMP_DIR = Path("/tmp/media")
-
-def ensure_temp_dir():
-    TEMP_DIR.mkdir(parents=True, exist_ok=True)
+TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
 def download_media(url: str, format_type: str) -> dict:
-    ensure_temp_dir()
     file_id = str(uuid.uuid4())
     outtmpl = str(TEMP_DIR / f"{file_id}.%(ext)s")
     
-    # Fixes: JS Runtime bypass & Timeouts
     ydl_opts = {
-        'format': 'bestaudio/best' if format_type == 'mp3' else 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
         'outtmpl': outtmpl,
         'quiet': True,
-        'no_warnings': True,
         'socket_timeout': 120,
         'retries': 10,
         'extractor_args': {'youtube': {'player_client': ['android', 'web']}}
     }
-
     if format_type == 'mp3':
-        ydl_opts['postprocessors'] = [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3', 'preferredquality': '192'}]
+        ydl_opts['format'] = 'bestaudio/best'
+        ydl_opts['postprocessors'] = [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}]
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
         filepath = ydl.prepare_filename(info)
-        if format_type == 'mp3':
-            filepath = str(TEMP_DIR / f"{file_id}.mp3")
-            
+        if format_type == 'mp3': filepath = str(TEMP_DIR / f"{file_id}.mp3")
         return {"title": info.get('title'), "filepath": filepath}
 
-def trim_video(input_path: str, start: float, end: float) -> str:
-    output_path = str(TEMP_DIR / f"{uuid.uuid4()}.mp4")
-    clip = VideoFileClip(input_path).subclip(start, end)
-    clip.write_videofile(output_path, codec="libx264", audio_codec="aac", logger=None)
-    clip.close()
-    return output_path
+def get_video_metadata(video_path: str, job_id: str) -> dict:
+    """Gets duration and creates a thumbnail using FFmpeg directly (faster than moviepy)"""
+    thumb_path = str(TEMP_DIR / f"{job_id}.jpg")
+    
+    # Get duration
+    cmd = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', video_path]
+    duration = float(subprocess.run(cmd, capture_output=True, text=True).stdout.strip())
+    
+    # Get thumbnail at 1 second
+    subprocess.run(['ffmpeg', '-i', video_path, '-ss', '00:00:01.000', '-vframes', '1', '-q:v', '2', thumb_path, '-y'], capture_output=True)
+    
+    return {"duration": duration, "thumbnail": f"/tmp/media/{job_id}.jpg"}
 
-def extract_audio(input_path: str) -> str:
-    output_path = str(TEMP_DIR / f"{uuid.uuid4()}.mp3")
-    clip = VideoFileClip(input_path)
-    clip.audio.write_audiofile(output_path, logger=None)
-    clip.close()
-    return output_path
+def process_editor_actions(video_path: str, start: float, end: float, volume: float, speed: float) -> str:
+    output_path = str(TEMP_DIR / f"out_{uuid.uuid4()}.mp4")
+    
+    clip = VideoFileClip(video_path)
+    
+    # Trim
+    if end and end > start:
+        clip = clip.subclip(start, end)
+    elif start > 0:
+        clip = clip.subclip(start, clip.duration)
 
-def add_watermark(input_path: str, image_path: str) -> str:
-    output_path = str(TEMP_DIR / f"{uuid.uuid4()}.mp4")
-    video = VideoFileClip(input_path)
-    overlay = (ImageClip(image_path)
-               .set_duration(video.duration)
-               .resize(height=60)
-               .margin(right=10, bottom=10, opacity=0)
-               .set_pos(("right", "bottom")))
-    final = CompositeVideoClip([video, overlay])
-    final.write_videofile(output_path, codec="libx264", audio_codec="aac", logger=None)
-    video.close(); final.close()
-    return output_path
+    # Speed
+    if speed != 1.0:
+        clip = clip.fx(lambda c, s=speed: c.speedx(s))
 
-def replace_audio(video_path: str, new_audio_path: str) -> str:
-    output_path = str(TEMP_DIR / f"{uuid.uuid4()}.mp4")
-    video = VideoFileClip(video_path)
-    new_audio = AudioFileClip(new_audio_path)
-    final = video.set_audio(new_audio)
-    final.write_videofile(output_path, codec="libx264", audio_codec="aac", logger=None)
-    video.close(); new_audio.close(); final.close()
-    return output_path
+    # Volume
+    if volume != 1.0:
+        clip = clip.volumex(volume)
 
-def merge_videos(video1_path: str, video2_path: str) -> str:
-    output_path = str(TEMP_DIR / f"{uuid.uuid4()}.mp4")
-    clip1 = VideoFileClip(video1_path)
-    clip2 = VideoFileClip(video2_path)
-    final = concatenate_videoclips([clip1, clip2])
-    final.write_videofile(output_path, codec="libx264", audio_codec="aac", logger=None)
-    clip1.close(); clip2.close(); final.close()
-    return output_path
-
-def adjust_volume(input_path: str, multiplier: float) -> str:
-    output_path = str(TEMP_DIR / f"{uuid.uuid4()}.mp4")
-    clip = VideoFileClip(input_path)
-    clip = clip.volumex(multiplier)
     clip.write_videofile(output_path, codec="libx264", audio_codec="aac", logger=None)
     clip.close()
     return output_path
