@@ -2,24 +2,29 @@
 {% block title %}News - TunisiaHub{% endblock %}
 {% block content %}
 <div class="flex justify-between items-center mb-6">
-    <h2 class="text-3xl font-bold">📰 News</h2>
-    <div class="flex gap-2">
-        <a href="/news?category=Politics" class="px-3 py-1 bg-gray-800 rounded hover:bg-gray-700">Politics</a>
-        <a href="/news?category=Tech" class="px-3 py-1 bg-gray-800 rounded hover:bg-gray-700">Tech</a>
-        <a href="/news?category=Sports" class="px-3 py-1 bg-gray-800 rounded hover:bg-gray-700">Sports</a>
+    <div class="flex gap-4 items-center">
+        <h2 class="text-3xl font-bold">📰 News</h2>
+        <div class="flex gap-2">
+            <a href="/news" class="px-3 py-1 bg-slate-800 rounded hover:bg-slate-700 text-sm">All</a>
+            <a href="/news?category=Politics" class="px-3 py-1 bg-slate-800 rounded hover:bg-slate-700 text-sm">Politics</a>
+            <a href="/news?category=Tech" class="px-3 py-1 bg-slate-800 rounded hover:bg-slate-700 text-sm">Tech</a>
+        </div>
     </div>
+    {% if request.state.user and request.state.user.is_admin %}
+        <a href="/admin/news/new" class="bg-green-600 px-4 py-2 rounded font-bold hover:bg-green-700 text-sm">+ Add News Article</a>
+    {% endif %}
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     {% for article in articles %}
-    <article class="bg-gray-800 rounded-xl overflow-hidden hover:scale-[1.02] transition-transform">
+    <article class="bg-slate-800 rounded-xl overflow-hidden hover:scale-[1.02] transition-transform">
         {% if article.image_url %}
             <img src="{{ article.image_url }}" class="w-full h-48 object-cover">
         {% endif %}
         <div class="p-4">
             <span class="text-xs text-blue-400 bg-blue-400/10 px-2 py-1 rounded">{{ article.category }}</span>
             <h3 class="text-xl font-bold mt-2">{{ article.title }}</h3>
-            <p class="text-gray-400 mt-2 line-clamp-3">{{ article.content | safe }}</p>
+            <p class="text-slate-400 mt-2 line-clamp-3">{{ article.content | safe }}</p>
         </div>
     </article>
     {% endfor %}
