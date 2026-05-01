@@ -6,17 +6,21 @@ from fastapi.templating import Jinja2Templates
 from app.database import engine, Base
 from app.routes import radio, news, downloader, transcription, admin, auth_routes
 
-# Create tables
 async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
 app = FastAPI(on_startup=[startup])
 
+# Mount standard static folder
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+# Mount temp folder securely to serve video thumbnails
+os.makedirs("/tmp/media", exist_ok=True)
+app.mount("/tmp", StaticFiles(directory="/tmp"), name="temp")
+
 templates = Jinja2Templates(directory="app/templates")
 
-# Inject user globally for navbar
 @app.middleware("http")
 async def add_user_to_request(request: Request, call_next):
     from app.auth import get_current_user
